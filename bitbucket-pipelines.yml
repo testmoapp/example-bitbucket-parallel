@@ -1,0 +1,69 @@
+image: node:16
+
+definitions:
+  caches:
+    npm: ~/.npm
+  steps:
+    - step: &test
+        name: Test
+        caches:
+          - npm
+        script:
+          - npm ci
+          - npx testmo automation:run:submit-thread
+              --instance $TESTMO_URL
+              --run-id $(cat testmo-run-id.txt)
+              --results results/*.xml
+              -- npm run mocha-junit-parallel # Note space after --
+
+pipelines:
+  default:
+    - step:
+        name: Build
+        script:
+          - echo "Building .."
+
+    - step:
+        name: Test setup
+        caches:
+          - npm
+        script:
+          - npm ci
+
+          # Optionally add a couple of fields such as the git hash
+          # and link to the build
+          - npx testmo automation:resources:add-field --name git --type string
+              --value ${BITBUCKET_COMMIT:0:7} --resources resources.json
+          - BUILD_URL="$BITBUCKET_GIT_HTTP_ORIGIN/addon/pipelines/home#!/results/$BITBUCKET_BUILD_NUMBER"
+          - npx testmo automation:resources:add-link --name build
+              --url $BUILD_URL --resources resources.json
+
+          - npx testmo automation:run:create
+              --instance $TESTMO_URL
+              --project-id 1
+              --name "Parallel mocha test run"
+              --resources resources.json
+              --source "unit-tests" > testmo-run-id.txt
+        artifacts:
+          - testmo-run-id.txt
+
+    - parallel:
+      - step: *test
+      - step: *test
+      - step: *test
+      - step: *test
+
+    - step:
+        name: Test complete
+        caches:
+          - npm
+        script:
+          - npm ci
+          - npx testmo automation:run:complete
+              --instance $TESTMO_URL
+              --run-id $(cat testmo-run-id.txt)
+
+    - step:
+        name: Deploy
+        script:
+          - echo "Deploying .."
