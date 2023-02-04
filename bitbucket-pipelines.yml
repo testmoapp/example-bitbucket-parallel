@@ -10,6 +10,8 @@ definitions:
           - npm
         script:
           - npm ci
+
+          # Run automated tests and report results to Testmo
           - npx testmo automation:run:submit-thread
               --instance "$TESTMO_URL"
               --run-id "$(cat testmo-run-id.txt)"
@@ -38,6 +40,19 @@ pipelines:
           - npx testmo automation:resources:add-link --name build
               --url $BUILD_URL --resources resources.json
 
+          # Check if the required variables are available
+          - >
+            if [[ -z "${TESTMO_URL}" ]]; then
+              echo "The TESTMO_URL variable is not defined for this repository"
+              exit 1
+            fi
+
+            if [[ -z "${TESTMO_TOKEN}" ]]; then
+              echo "The TESTMO_TOKEN variable is not defined for this repository"
+              exit 1
+            fi
+
+          # Create test run
           - npx testmo automation:run:create
               --instance "$TESTMO_URL"
               --project-id 1
@@ -59,6 +74,8 @@ pipelines:
           - npm
         script:
           - npm ci
+
+          # Mark test run completed
           - npx testmo automation:run:complete
               --instance "$TESTMO_URL"
               --run-id "$(cat testmo-run-id.txt)"
