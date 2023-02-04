@@ -1,4 +1,4 @@
-image: node:16
+image: node:19
 
 definitions:
   caches:
@@ -11,8 +11,8 @@ definitions:
         script:
           - npm ci
           - npx testmo automation:run:submit-thread
-              --instance $TESTMO_URL
-              --run-id $(cat testmo-run-id.txt)
+              --instance "$TESTMO_URL"
+              --run-id "$(cat testmo-run-id.txt)"
               --results results/*.xml
               -- npm run mocha-junit-parallel # Note space after --
 
@@ -39,7 +39,7 @@ pipelines:
               --url $BUILD_URL --resources resources.json
 
           - npx testmo automation:run:create
-              --instance $TESTMO_URL
+              --instance "$TESTMO_URL"
               --project-id 1
               --name "Parallel mocha test run"
               --resources resources.json
@@ -60,8 +60,8 @@ pipelines:
         script:
           - npm ci
           - npx testmo automation:run:complete
-              --instance $TESTMO_URL
-              --run-id $(cat testmo-run-id.txt)
+              --instance "$TESTMO_URL"
+              --run-id "$(cat testmo-run-id.txt)"
 
     - step:
         name: Deploy
